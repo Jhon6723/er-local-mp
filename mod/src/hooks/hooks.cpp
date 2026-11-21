@@ -302,7 +302,10 @@ uint64_t* fake_GetSteamID(void* self, uint64_t* out) {
         return out;
     }
     using Orig_t = uint64_t*(*)(void*, uint64_t*);
-    return ((Orig_t)g_su_orig_vt[2])(self, out);
+    if (g_su_orig_vt[2]) return ((Orig_t)g_su_orig_vt[2])(self, out);
+    // sin cliente Steam: save ID fijo para no romper ER0000.sl2 entre sesiones
+    *out = 0x0110000100000001ULL;
+    return out;
 }
 
 uint32_t fake_GetAuthSessionTicket(void*, void* pTicket, int cbMax, uint32_t* pcbTicket) {
@@ -370,17 +373,21 @@ void commit_vtable(void* iface, void** custom_vt) {
     VirtualProtect(iface, sizeof(void*), old, &old);
 }
 
+void apply_su_fakes(void** vt) {
+    vt[2]  = (void*)fake_GetSteamID;
+    vt[13] = (void*)fake_GetAuthSessionTicket;
+    vt[14] = (void*)fake_BeginAuthSession;
+    vt[15] = (void*)fake_EndAuthSession;
+    vt[16] = (void*)fake_CancelAuthTicket;
+    vt[20] = (void*)fake_RequestEncryptedAppTicket;
+    vt[21] = (void*)fake_GetEncryptedAppTicket;
+}
+
 void wrap_steam_user(void* su) {
     if (!su) return;
     if (!g_su_wrapped) {
         wrap_vtable(su, g_su_orig_vt, g_su_vt, 40, g_su_wrapped, "SteamUser021");
-        g_su_vt[2]  = (void*)fake_GetSteamID;
-        g_su_vt[13] = (void*)fake_GetAuthSessionTicket;
-        g_su_vt[14] = (void*)fake_BeginAuthSession;
-        g_su_vt[15] = (void*)fake_EndAuthSession;
-        g_su_vt[16] = (void*)fake_CancelAuthTicket;
-        g_su_vt[20] = (void*)fake_RequestEncryptedAppTicket;
-        g_su_vt[21] = (void*)fake_GetEncryptedAppTicket;
+        apply_su_fakes(g_su_vt);
     }
     commit_vtable(su, g_su_vt);
 }
@@ -397,11 +404,12 @@ const char* fake_GetFriendPersonaName(void* self, uint64_t sid) {
     return r;
 }
 
+void apply_sf_fakes(void** vt);
 void wrap_steam_friends(void* sf) {
     if (!sf) return;
     if (!g_sf_wrapped) {
         wrap_vtable(sf, g_sf_orig_vt, g_sf_vt, 64, g_sf_wrapped, "SteamFriends017");
-        g_sf_vt[7] = (void*)fake_GetFriendPersonaName; // +0x38
+        apply_sf_fakes(g_sf_vt);
     }
     commit_vtable(sf, g_sf_vt);
 }
@@ -418,13 +426,16 @@ bool fake_IsAPICallCompleted(void* self, uint64_t hCall, bool* pbFailed) {
         return g_api_results.find(hCall) != g_api_results.end();
     }
     using Orig_t = bool(*)(void*, uint64_t, bool*);
-    return ((Orig_t)g_ut_orig_vt[11])(self, hCall, pbFailed);
+    if (g_ut_orig_vt[11]) return ((Orig_t)g_ut_orig_vt[11])(self, hCall, pbFailed);
+    if (pbFailed) *pbFailed = false;
+    return true;
 }
 
 int fake_GetAPICallFailureReason(void* self, uint64_t hCall) {
     if ((hCall & SYNTH_CALL_MASK) == SYNTH_CALL_PREFIX) return -1;
     using Orig_t = int(*)(void*, uint64_t);
-    return ((Orig_t)g_ut_orig_vt[12])(self, hCall);
+    if (g_ut_orig_vt[12]) return ((Orig_t)g_ut_orig_vt[12])(self, hCall);
+    return -1;
 }
 
 bool fake_GetAPICallResult(void* self, uint64_t hCall, void* pCallback, int cubCallback,
@@ -443,16 +454,16 @@ bool fake_GetAPICallResult(void* self, uint64_t hCall, void* pCallback, int cubC
         return true;
     }
     using Orig_t = bool(*)(void*, uint64_t, void*, int, int, bool*);
-    return ((Orig_t)g_ut_orig_vt[13])(self, hCall, pCallback, cubCallback, iExpected, pbFailed);
+    if (g_ut_orig_vt[13]) return ((Orig_t)g_ut_orig_vt[13])(self, hCall, pCallback, cubCallback, iExpected, pbFailed);
+    return false;
 }
 
+void apply_ut_fakes(void** vt);
 void wrap_steam_utils(void* ut) {
     if (!ut) return;
     if (!g_ut_wrapped) {
         wrap_vtable(ut, g_ut_orig_vt, g_ut_vt, 40, g_ut_wrapped, "SteamUtils010");
-        g_ut_vt[11] = (void*)fake_IsAPICallCompleted;     // +0x58
-        g_ut_vt[12] = (void*)fake_GetAPICallFailureReason; // +0x60
-        g_ut_vt[13] = (void*)fake_GetAPICallResult;        // +0x68
+        apply_ut_fakes(g_ut_vt);
     }
     commit_vtable(ut, g_ut_vt);
 }
@@ -550,19 +561,59 @@ bool fake_SetLobbyOwner(void*, uint64_t lid, uint64_t new_owner) {
     return true;
 }
 
+void apply_mm_fakes(void** vt);
 void wrap_steam_matchmaking(void* mm) {
     if (!mm) return;
     if (!g_mm_wrapped) {
         wrap_vtable(mm, g_mm_orig_vt, g_mm_vt, 48, g_mm_wrapped, "SteamMatchMaking009");
-        g_mm_vt[13] = (void*)fake_CreateLobby;           // +0x68
-        g_mm_vt[14] = (void*)fake_JoinLobby;             // +0x70
-        g_mm_vt[15] = (void*)fake_LeaveLobby;            // +0x78
-        g_mm_vt[17] = (void*)fake_GetNumLobbyMembers;    // +0x88
-        g_mm_vt[18] = (void*)fake_GetLobbyMemberByIndex; // +0x90
-        g_mm_vt[35] = (void*)fake_GetLobbyOwner;         // +0x118
-        g_mm_vt[36] = (void*)fake_SetLobbyOwner;         // +0x120
+        apply_mm_fakes(g_mm_vt);
     }
     commit_vtable(mm, g_mm_vt);
+}
+
+// ---- ifaces falsos autocontenidos (directo sin cliente Steam) ----------------
+// El iface es un puntero a una celda con la vtable; slots no mapeados -> 0.
+uint64_t    vt_stub()       { return 0; }
+const char* vt_stub_str()   { return ""; }
+uint32_t    vt_stub_appid() { return 1245620; }
+
+void* g_fake_su_vt[40], *g_fake_sf_vt[64], *g_fake_ut_vt[40], *g_fake_mm_vt[48];
+void* g_fake_su_obj = nullptr, *g_fake_sf_obj = nullptr,
+      *g_fake_ut_obj = nullptr, *g_fake_mm_obj = nullptr;
+
+void apply_sf_fakes(void** vt) {
+    vt[0] = (void*)vt_stub_str;                 // GetPersonaName
+    vt[7] = (void*)fake_GetFriendPersonaName;   // +0x38
+}
+void apply_ut_fakes(void** vt) {
+    vt[4]  = (void*)vt_stub_str;                 // GetIPCountry
+    vt[9]  = (void*)vt_stub_appid;               // GetAppID
+    vt[11] = (void*)fake_IsAPICallCompleted;     // +0x58
+    vt[12] = (void*)fake_GetAPICallFailureReason;// +0x60
+    vt[13] = (void*)fake_GetAPICallResult;       // +0x68
+}
+void apply_mm_fakes(void** vt) {
+    vt[13] = (void*)fake_CreateLobby;            // +0x68
+    vt[14] = (void*)fake_JoinLobby;              // +0x70
+    vt[15] = (void*)fake_LeaveLobby;             // +0x78
+    vt[17] = (void*)fake_GetNumLobbyMembers;     // +0x88
+    vt[18] = (void*)fake_GetLobbyMemberByIndex;  // +0x90
+    vt[19] = (void*)vt_stub_str;                 // GetLobbyData
+    vt[22] = (void*)vt_stub_str;                 // GetLobbyDataByIndex
+    vt[24] = (void*)vt_stub_str;                 // GetLobbyMemberData
+    vt[35] = (void*)fake_GetLobbyOwner;          // +0x118
+    vt[36] = (void*)fake_SetLobbyOwner;          // +0x120
+}
+
+void* make_fake_iface(void** obj_cell, void** vt, size_t n,
+                      void(*apply)(void**), const char* ver) {
+    if (!*obj_cell) {
+        for (size_t i = 0; i < n; ++i) vt[i] = (void*)vt_stub;
+        apply(vt);
+        *obj_cell = vt;
+        log::info("steam: fake iface %s (sin cliente Steam)", ver);
+    }
+    return obj_cell;
 }
 
 // ---- IAT hooks de steam_api64.dll -------------------------------------------
@@ -594,10 +645,22 @@ void* route_interface(const char* ver, void* r) {
     if (!ver) return r;
     if (g_steam_mode) return r; // mode=steam: passthrough total a OnlineFix
     if (strstr(ver, "SteamNetworking00")) return &g_fake;
-    if (strstr(ver, "SteamUser0"))        wrap_steam_user(r);
-    else if (strstr(ver, "SteamFriends0")) wrap_steam_friends(r);
-    else if (strstr(ver, "SteamUtils0"))   wrap_steam_utils(r);
-    else if (strstr(ver, "SteamMatchMaking0")) wrap_steam_matchmaking(r);
+    if (strstr(ver, "SteamUser0")) {
+        if (r) { wrap_steam_user(r); return r; }
+        return make_fake_iface(&g_fake_su_obj, g_fake_su_vt, 40, apply_su_fakes, ver);
+    }
+    if (strstr(ver, "SteamFriends0")) {
+        if (r) { wrap_steam_friends(r); return r; }
+        return make_fake_iface(&g_fake_sf_obj, g_fake_sf_vt, 64, apply_sf_fakes, ver);
+    }
+    if (strstr(ver, "SteamUtils0")) {
+        if (r) { wrap_steam_utils(r); return r; }
+        return make_fake_iface(&g_fake_ut_obj, g_fake_ut_vt, 40, apply_ut_fakes, ver);
+    }
+    if (strstr(ver, "SteamMatchMaking0")) {
+        if (r) { wrap_steam_matchmaking(r); return r; }
+        return make_fake_iface(&g_fake_mm_obj, g_fake_mm_vt, 48, apply_mm_fakes, ver);
+    }
     return r;
 }
 
@@ -840,11 +903,13 @@ bool hooks::install() {
                 }
             }
         }
-    } else if (g_orig_foc) {
-        wrap_steam_user(g_orig_foc(hu, "SteamUser021"));
-        wrap_steam_friends(g_orig_foc(hu, "SteamFriends017"));
-        wrap_steam_utils(g_orig_foc(hu, "SteamUtils010"));
-        wrap_steam_matchmaking(g_orig_foc(hu, "SteamMatchMaking009"));
+    } else {
+        // directo: ifaces falsos autocontenidos — nunca llamar al impl real
+        // de steam_api64 (sin cliente puede devolver null o crashear).
+        route_interface("SteamUser021", nullptr);
+        route_interface("SteamFriends017", nullptr);
+        route_interface("SteamUtils010", nullptr);
+        route_interface("SteamMatchMaking009", nullptr);
     }
 
     // NOTA build f9118fea: las interfaces se cachean en campos de objetos
