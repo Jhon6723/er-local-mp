@@ -573,6 +573,10 @@ using UnregCb_t         = void(*)(void*);
 using RegCallRes_t      = void(*)(void*, uint64_t);
 using UnregCallRes_t    = void(*)(void*, uint64_t);
 using RunCallbacks_t    = void(*)();
+using SteamInit_t       = bool(*)();
+using RestartApp_t      = bool(*)(uint32_t);
+using ContextInit_t     = void*(*)(void*);
+using GetHSteamUser_t   = int(*)();
 
 CreateInterface_t g_orig_ci      = nullptr;
 FindOrCreate_t    g_orig_foc     = nullptr;
@@ -581,6 +585,10 @@ UnregCb_t         g_orig_unregcb = nullptr;
 RegCallRes_t      g_orig_regcr   = nullptr;
 UnregCallRes_t    g_orig_unregcr = nullptr;
 RunCallbacks_t    g_orig_runcb   = nullptr;
+SteamInit_t       g_orig_init    = nullptr;
+RestartApp_t      g_orig_raan    = nullptr;
+ContextInit_t     g_orig_ctx     = nullptr;
+GetHSteamUser_t   g_orig_ghu     = nullptr;
 
 void* route_interface(const char* ver, void* r) {
     if (!ver) return r;
@@ -594,15 +602,55 @@ void* route_interface(const char* ver, void* r) {
 }
 
 void* hook_CreateInterface(const char* ver) {
-    void* r = g_orig_ci ? g_orig_ci(ver) : nullptr;
+    // directo: la impl real sin cliente Steam puede crashear; usamos fakes propios
+    void* r = (g_steam_mode && g_orig_ci) ? g_orig_ci(ver) : nullptr;
     log::info("steam: CreateInterface(%s) -> %p", ver ? ver : "?", r);
     return route_interface(ver, r);
 }
 
 void* hook_FindOrCreate(int hUser, const char* ver) {
-    void* r = g_orig_foc ? g_orig_foc(hUser, ver) : nullptr;
+    void* r = (g_steam_mode && g_orig_foc) ? g_orig_foc(hUser, ver) : nullptr;
     log::info("steam: FindOrCreate(%d,%s) -> %p", hUser, ver ? ver : "?", r);
     return route_interface(ver, r);
+}
+
+// Bootstrap: sin cliente Steam el juego llama SteamAPI_Init /
+// SteamAPI_RestartAppIfNecessary y se cierra solo. En directo se finge OK;
+// en steam se delega a la impl real (OnlineFix/Steam presente).
+bool hook_SteamInit() {
+    if (g_steam_mode && g_orig_init) return g_orig_init();
+    log::info("steam: Init -> true (fake)");
+    return true;
+}
+
+bool hook_RestartApp(uint32_t appid) {
+    if (g_steam_mode && g_orig_raan) return g_orig_raan(appid);
+    log::info("steam: RestartAppIfNecessary -> false");
+    return false;
+}
+
+// El juego trata el retorno de ContextInit como ctx* -> obj -> vtable y
+// llama vfuncs ([+0x30] al menos) esperando true. En directo devolvemos una
+// estructura falsa con todos los slots -> true; en steam delegamos al real.
+bool ctx_bootstrap_ok() { return true; }
+void* g_ctx_vt[64]    = {};
+void* g_ctx_obj       = nullptr;
+void* g_ctx_inner[1]  = {};
+
+void* hook_ContextInit(void* p) {
+    if (g_steam_mode && g_orig_ctx) return g_orig_ctx(p); // mismo tipo
+    if (!g_ctx_obj) {
+        for (auto& s : g_ctx_vt) s = (void*)ctx_bootstrap_ok;
+        g_ctx_obj      = g_ctx_vt;
+        g_ctx_inner[0] = &g_ctx_obj;
+        log::info("steam: ContextInit -> fake ctx");
+    }
+    return g_ctx_inner;
+}
+
+int hook_GetHSteamUser() {
+    if (g_steam_mode && g_orig_ghu) return g_orig_ghu();
+    return 1;
 }
 
 void hook_RegisterCallback(void* cb, int iCallback) {
@@ -614,7 +662,7 @@ void hook_RegisterCallback(void* cb, int iCallback) {
         }
         if (!exists) g_reg_cbs.push_back({cb, iCallback});
     }
-    if (g_orig_regcb) g_orig_regcb(cb, iCallback);
+    if (g_steam_mode && g_orig_regcb) g_orig_regcb(cb, iCallback);
 }
 
 void hook_UnregisterCallback(void* cb) {
@@ -625,7 +673,7 @@ void hook_UnregisterCallback(void* cb) {
             else ++it;
         }
     }
-    if (g_orig_unregcb) g_orig_unregcb(cb);
+    if (g_steam_mode && g_orig_unregcb) g_orig_unregcb(cb);
 }
 
 void hook_RegisterCallResult(void* cb, uint64_t call) {
@@ -635,7 +683,7 @@ void hook_RegisterCallResult(void* cb, uint64_t call) {
         g_pending_crs.push_back({cb, call});
         return;
     }
-    if (g_orig_regcr) g_orig_regcr(cb, call);
+    if (g_steam_mode && g_orig_regcr) g_orig_regcr(cb, call);
 }
 
 void hook_UnregisterCallResult(void* cb, uint64_t call) {
@@ -647,11 +695,11 @@ void hook_UnregisterCallResult(void* cb, uint64_t call) {
         }
         return;
     }
-    if (g_orig_unregcr) g_orig_unregcr(cb, call);
+    if (g_steam_mode && g_orig_unregcr) g_orig_unregcr(cb, call);
 }
 
 void hook_RunCallbacks() {
-    if (g_orig_runcb) g_orig_runcb();
+    if (g_steam_mode && g_orig_runcb) g_orig_runcb();
 
     uint64_t np = 0;
     while (transport::pop_new_peer(&np)) {
@@ -712,8 +760,12 @@ struct SEnt { uint32_t rva; void* fn; void** orig; const char* exp; };
 // IAT steam_api64.dll @ base 0x4C1509C (llvm-readobj --coff-imports, build f9118fea)
 SEnt STEAM_IAT[] = {
     {0x4c1509c, (void*)hook_FindOrCreate,         (void**)&g_orig_foc,     "SteamInternal_FindOrCreateUserInterface"},
-    {0x4c150ec, (void*)hook_CreateInterface,      (void**)&g_orig_ci,      "SteamInternal_CreateInterface"},
+    {0x4c150a4, (void*)hook_ContextInit,          (void**)&g_orig_ctx,     "SteamInternal_ContextInit"},
+    {0x4c150ac, (void*)hook_GetHSteamUser,        (void**)&g_orig_ghu,     "SteamAPI_GetHSteamUser"},
     {0x4c150b4, (void*)hook_RegisterCallback,     (void**)&g_orig_regcb,   "SteamAPI_RegisterCallback"},
+    {0x4c150bc, (void*)hook_SteamInit,            (void**)&g_orig_init,    "SteamAPI_Init"},
+    {0x4c150cc, (void*)hook_RestartApp,           (void**)&g_orig_raan,    "SteamAPI_RestartAppIfNecessary"},
+    {0x4c150ec, (void*)hook_CreateInterface,      (void**)&g_orig_ci,      "SteamInternal_CreateInterface"},
     {0x4c150fc, (void*)hook_UnregisterCallback,   (void**)&g_orig_unregcb, "SteamAPI_UnregisterCallback"},
     {0x4c150dc, (void*)hook_RegisterCallResult,   (void**)&g_orig_regcr,   "SteamAPI_RegisterCallResult"},
     {0x4c150e4, (void*)hook_UnregisterCallResult, (void**)&g_orig_unregcr, "SteamAPI_UnregisterCallResult"},
@@ -764,9 +816,12 @@ bool hooks::install() {
         ++patched;
     }
 
-    using GetHSteamUser_t = int(*)();
-    auto get_huser = (GetHSteamUser_t)GetProcAddress(api, "SteamAPI_GetHSteamUser");
-    int hu = get_huser ? get_huser() : 1;
+    int hu = 1;
+    if (g_steam_mode) {
+        // solo en steam se consulta al cliente real; sin el la impl puede crashear
+        auto get_huser = (GetHSteamUser_t)GetProcAddress(api, "SteamAPI_GetHSteamUser");
+        if (get_huser) hu = get_huser();
+    }
     if (g_steam_mode) {
         // mode=steam: no wrapping — identidad real de la emu OnlineFix.
         // Leer el SteamID64 real via vtable[2] (ISteamUser::GetSteamID) para
@@ -799,8 +854,8 @@ bool hooks::install() {
     // vtable ya envuelta. Los antiguos slots globales (0x3b48a10 etc.) no
     // existen en esta build y no deben tocarse.
 
-    log::info("steam iat: %d/7 slots patched (su=%d sf=%d ut=%d mm=%d)",
+    log::info("steam iat: %d/11 slots patched (su=%d sf=%d ut=%d mm=%d)",
               patched, g_su_wrapped ? 1 : 0, g_sf_wrapped ? 1 : 0,
               g_ut_wrapped ? 1 : 0, g_mm_wrapped ? 1 : 0);
-    return patched == 7;
+    return patched == 11;
 }

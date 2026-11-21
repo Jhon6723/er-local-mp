@@ -8,8 +8,10 @@ analysis/unseamless-coop/
 
 # Artefactos de build y runtime
 build/
+dist/
 *.log
 __pycache__/
 *.pyc
 matchbox/bloodmessages.json
 matchbox/bm_dump.txt
+*.err

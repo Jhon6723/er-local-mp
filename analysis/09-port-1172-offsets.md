@@ -40,6 +40,38 @@
 - `0x3c61e20` es `__security_cookie` (NO eosMgr) — `mov rax,[rip]; xor rax,rsp` en prólogos.
 - `0x4849de0` es un singleton lazy de runtime (getter `0x141ed2070`) — NO eosMgr.
 
+## Bootstrap de steam_api64 sin cliente Steam (descubierto en runtime)
+
+Con `steam_api64.dll` **real de Valve** y sin cliente Steam, el juego se
+autodestruía tras `Init`. Análisis del crash WER (`0xc0000005`) + disasm:
+
+**Función bootstrap @ `0x140e8dda0`** (llamada al inicio de la red):
+```asm
+mov  ecx, 0x1301b4            ; AppId 1245620
+call [IAT 0x4c150cc]          ; SteamAPI_RestartAppIfNecessary -> debe ser false
+test al,al / jne exit
+call [IAT 0x4c150bc]          ; SteamAPI_Init -> debe ser true
+test al,al / je exit
+lea  rcx, [&ctx]              ; objeto .data
+call [IAT 0x4c150a4]          ; SteamInternal_ContextInit -> ctx*
+mov  rcx, [rax]               ; ctx -> objeto
+mov  rax, [rcx]               ; objeto -> vtable      (crash original 0xe8ddd2)
+call [rax+0x30]               ; vfunc "¿todo ok?" -> debe ser true
+test al,al / jne ok ; si no: SteamAPI_Shutdown + exit
+```
+
+**Hooks necesarios (11 slots steam IAT, base `0x4c1509c`)**: además de las
+7 originales (FOC, CreateInterface, callbacks), hay que interceptar
+`Init→true`, `RestartAppIfNecessary→false`, `GetHSteamUser→1` y
+`ContextInit→ctx*` donde ctx = `{&obj}` con obj = vtable de 64 slots
+todos → `return true` (vtable escasa causó crash `RIP=0` al llamar slot
+no poblado). En modo directo NUNCA se llama al impl real (puede crashear
+sin cliente); en `session=steam` se delega todo.
+
+**Hallazgo**: con esto el modo directo queda **100% autónomo** — juego
+llega a 5.4GB cargado sin Steam, sin OnlineFix, sin ningún servicio
+externo. OnlineFix/Steam solo se requiere para `session=steam`.
+
 ## mode=steam (híbrido)
 
 `[net] session=direct|steam` en `er_local_mp.ini`:
