@@ -1,0 +1,718 @@
+
+File: eldenring.exe
+Format: COFF-x86-64
+Arch: x86_64
+AddressSize: 64bit
+Import {
+  Name: d3d12.dll
+  ImportLookupTableRVA: 0x4C11F98
+  ImportAddressTableRVA: 0x4C14FDC
+  Symbol: D3D12SerializeRootSignature (0)
+  Symbol:  (102)
+  Symbol:  (101)
+}
+Import {
+  Name: dxgi.dll
+  ImportLookupTableRVA: 0x4C11FB8
+  ImportAddressTableRVA: 0x4C14FFC
+  Symbol: CreateDXGIFactory1 (0)
+  Symbol: CreateDXGIFactory (0)
+}
+Import {
+  Name: WINHTTP.dll
+  ImportLookupTableRVA: 0x4C11C28
+  ImportAddressTableRVA: 0x4C14C6C
+  Symbol: WinHttpSetStatusCallback (0)
+  Symbol: WinHttpOpen (0)
+  Symbol: WinHttpCloseHandle (0)
+  Symbol: WinHttpConnect (0)
+  Symbol: WinHttpQueryOption (0)
+  Symbol: WinHttpSetOption (0)
+  Symbol: WinHttpOpenRequest (0)
+  Symbol: WinHttpCrackUrl (0)
+  Symbol: WinHttpWebSocketClose (0)
+  Symbol: WinHttpWebSocketReceive (0)
+  Symbol: WinHttpWebSocketSend (0)
+  Symbol: WinHttpSendRequest (0)
+  Symbol: WinHttpWebSocketCompleteUpgrade (0)
+  Symbol: WinHttpReceiveResponse (0)
+}
+Import {
+  Name: bink2w64.dll
+  ImportLookupTableRVA: 0x4C11ED0
+  ImportAddressTableRVA: 0x4C14F14
+  Symbol: BinkPause (0)
+  Symbol: BinkGoto (0)
+  Symbol: BinkShouldSkip (0)
+  Symbol: BinkControlBackgroundIO (0)
+  Symbol: BinkDoFrameAsyncWait (0)
+  Symbol: BinkGetRealtime (0)
+  Symbol: BinkClose (0)
+  Symbol: BinkSetIOSize (0)
+  Symbol: BinkStartAsyncThread (0)
+  Symbol: BinkDoFrameAsyncMulti (0)
+  Symbol: BinkRequestStopAsyncThread (0)
+  Symbol: BinkWaitStopAsyncThread (0)
+  Symbol: BinkSetMemory (0)
+  Symbol: BinkSetVolume (0)
+  Symbol: BinkSetSpeakerVolumes (0)
+  Symbol: BinkWait (0)
+  Symbol: BinkNextFrame (0)
+  Symbol: BinkOpen (0)
+  Symbol: BinkSetSoundTrack (0)
+  Symbol: BinkAllocateFrameBuffers (0)
+  Symbol: BinkRegisterFrameBuffers (0)
+  Symbol: BinkGetFrameBuffersInfo (0)
+  Symbol: BinkOpenXAudio2 (0)
+  Symbol: BinkSetSoundSystem2 (0)
+}
+Import {
+  Name: amd_ags_x64.dll
+  ImportLookupTableRVA: 0x4C11EB0
+  ImportAddressTableRVA: 0x4C14EF4
+  Symbol: agsDeInit (0)
+  Symbol: agsSetDisplayMode (0)
+  Symbol: agsInit (0)
+}
+Import {
+  Name: WS2_32.dll
+  ImportLookupTableRVA: 0x4C11D48
+  ImportAddressTableRVA: 0x4C14D8C
+  Symbol:  (52)
+  Symbol:  (15)
+  Symbol:  (16)
+  Symbol:  (17)
+  Symbol:  (18)
+  Symbol:  (19)
+  Symbol:  (20)
+  Symbol: WSASocketW (0)
+  Symbol:  (14)
+  Symbol:  (13)
+  Symbol:  (9)
+  Symbol:  (8)
+  Symbol:  (4)
+  Symbol:  (3)
+  Symbol:  (2)
+  Symbol:  (1)
+  Symbol:  (151)
+  Symbol: freeaddrinfo (0)
+  Symbol: inet_ntop (0)
+  Symbol:  (5)
+  Symbol:  (7)
+  Symbol:  (112)
+  Symbol:  (10)
+  Symbol:  (21)
+  Symbol:  (23)
+  Symbol:  (57)
+  Symbol:  (115)
+  Symbol:  (116)
+  Symbol:  (111)
+  Symbol:  (12)
+  Symbol:  (6)
+  Symbol: WSACloseEvent (0)
+  Symbol: WSACreateEvent (0)
+  Symbol: WSAEnumNetworkEvents (0)
+  Symbol: WSAEventSelect (0)
+  Symbol: WSAWaitForMultipleEvents (0)
+  Symbol:  (11)
+  Symbol:  (22)
+  Symbol: inet_pton (0)
+  Symbol: getnameinfo (0)
+  Symbol: getaddrinfo (0)
+}
+Import {
+  Name: oo2core_6_win64.dll
+  ImportLookupTableRVA: 0x4C12020
+  ImportAddressTableRVA: 0x4C15064
+  Symbol: OodleLZ_GetCompressedStepForRawStep (0)
+  Symbol: OodleLZDecoder_MemorySizeNeeded (0)
+  Symbol: OodleLZ_Decompress (0)
+  Symbol: OodleLZ_GetCompressedBufferSizeNeeded (0)
+  Symbol: OodleLZ_CompressOptions_GetDefault (0)
+  Symbol: OodleLZ_Compress (0)
+}
+Import {
+  Name: WINMM.dll
+  ImportLookupTableRVA: 0x4C11CA0
+  ImportAddressTableRVA: 0x4C14CE4
+  Symbol: timeGetTime (0)
+  Symbol: timeEndPeriod (0)
+  Symbol: timeBeginPeriod (0)
+}
+Import {
+  Name: steam_api64.dll
+  ImportLookupTableRVA: 0x4C12058
+  ImportAddressTableRVA: 0x4C1509C
+  Symbol: SteamInternal_FindOrCreateUserInterface (0)
+  Symbol: SteamInternal_ContextInit (0)
+  Symbol: SteamAPI_GetHSteamUser (0)
+  Symbol: SteamAPI_RegisterCallback (0)
+  Symbol: SteamAPI_Init (0)
+  Symbol: SteamAPI_Shutdown (0)
+  Symbol: SteamAPI_RestartAppIfNecessary (0)
+  Symbol: SteamAPI_ReleaseCurrentThreadMemory (0)
+  Symbol: SteamAPI_RegisterCallResult (0)
+  Symbol: SteamAPI_UnregisterCallResult (0)
+  Symbol: SteamInternal_CreateInterface (0)
+  Symbol: SteamAPI_RunCallbacks (0)
+  Symbol: SteamAPI_UnregisterCallback (0)
+}
+Import {
+  Name: CRYPT32.dll
+  ImportLookupTableRVA: 0x4C112A8
+  ImportAddressTableRVA: 0x4C142EC
+  Symbol: CertOpenStore (0)
+  Symbol: CertCloseStore (0)
+  Symbol: CertEnumCertificatesInStore (0)
+  Symbol: CertFindCertificateInStore (0)
+  Symbol: CertDuplicateCertificateContext (0)
+  Symbol: CertFreeCertificateContext (0)
+  Symbol: CertGetCertificateContextProperty (0)
+}
+Import {
+  Name: KERNEL32.dll
+  ImportLookupTableRVA: 0x4C11320
+  ImportAddressTableRVA: 0x4C14364
+  Symbol: CreateTimerQueueTimer (0)
+  Symbol: GetLogicalProcessorInformation (0)
+  Symbol: SwitchToThread (0)
+  Symbol: SignalObjectAndWait (0)
+  Symbol: CreateTimerQueue (0)
+  Symbol: GetProcessHeap (0)
+  Symbol: HeapFree (0)
+  Symbol: HeapAlloc (0)
+  Symbol: InitializeSListHead (0)
+  Symbol: GetStartupInfoW (0)
+  Symbol: IsDebuggerPresent (0)
+  Symbol: IsProcessorFeaturePresent (0)
+  Symbol: TerminateProcess (0)
+  Symbol: SetUnhandledExceptionFilter (0)
+  Symbol: ChangeTimerQueueTimer (0)
+  Symbol: RtlLookupFunctionEntry (0)
+  Symbol: RtlCaptureContext (0)
+  Symbol: GetCPInfo (0)
+  Symbol: GetLocaleInfoW (0)
+  Symbol: LCMapStringW (0)
+  Symbol: CompareStringW (0)
+  Symbol: DecodePointer (0)
+  Symbol: EncodePointer (0)
+  Symbol: GetStringTypeW (0)
+  Symbol: GetNativeSystemInfo (0)
+  Symbol: DuplicateHandle (0)
+  Symbol: LoadLibraryExA (0)
+  Symbol: GetNumaHighestNodeNumber (0)
+  Symbol: RegisterWaitForSingleObject (0)
+  Symbol: UnhandledExceptionFilter (0)
+  Symbol: DeleteTimerQueueTimer (0)
+  Symbol: UnregisterWait (0)
+  Symbol: GetThreadTimes (0)
+  Symbol: FreeLibraryAndExitThread (0)
+  Symbol: GetModuleHandleA (0)
+  Symbol: GetVersionExW (0)
+  Symbol: InterlockedPopEntrySList (0)
+  Symbol: InterlockedPushEntrySList (0)
+  Symbol: InterlockedFlushSList (0)
+  Symbol: QueryDepthSList (0)
+  Symbol: UnregisterWaitEx (0)
+  Symbol: RtlPcToFileHeader (0)
+  Symbol: RtlUnwindEx (0)
+  Symbol: ExitThread (0)
+  Symbol: SystemTimeToTzSpecificLocalTime (0)
+  Symbol: ExitProcess (0)
+  Symbol: SetFilePointerEx (0)
+  Symbol: SetConsoleCtrlHandler (0)
+  Symbol: HeapReAlloc (0)
+  Symbol: GetConsoleCP (0)
+  Symbol: HeapSize (0)
+  Symbol: HeapQueryInformation (0)
+  Symbol: GetDateFormatW (0)
+  Symbol: GetTimeFormatW (0)
+  Symbol: IsValidLocale (0)
+  Symbol: GetUserDefaultLCID (0)
+  Symbol: EnumSystemLocalesW (0)
+  Symbol: GetFileSizeEx (0)
+  Symbol: SetStdHandle (0)
+  Symbol: GetExitCodeProcess (0)
+  Symbol: GetFileAttributesExW (0)
+  Symbol: CreatePipe (0)
+  Symbol: IsValidCodePage (0)
+  Symbol: GetACP (0)
+  Symbol: GetOEMCP (0)
+  Symbol: FindFirstFileExW (0)
+  Symbol: GetCommandLineA (0)
+  Symbol: GetEnvironmentStringsW (0)
+  Symbol: FreeEnvironmentStringsW (0)
+  Symbol: TlsGetValue (0)
+  Symbol: QueryPerformanceCounter (0)
+  Symbol: DeleteFileW (0)
+  Symbol: MoveFileW (0)
+  Symbol: GetComputerNameW (0)
+  Symbol: GetTempPathW (0)
+  Symbol: EnterCriticalSection (0)
+  Symbol: LeaveCriticalSection (0)
+  Symbol: SetThreadPriority (0)
+  Symbol: GetCommandLineW (0)
+  Symbol: CloseHandle (0)
+  Symbol: GetLastError (0)
+  Symbol: CreateMutexW (0)
+  Symbol: GetCurrentThread (0)
+  Symbol: LocalFree (0)
+  Symbol: Sleep (0)
+  Symbol: VirtualAlloc (0)
+  Symbol: SetEnvironmentVariableW (0)
+  Symbol: OutputDebugStringW (0)
+  Symbol: OpenThread (0)
+  Symbol: SetThreadIdealProcessor (0)
+  Symbol: FreeLibrary (0)
+  Symbol: GetProcAddress (0)
+  Symbol: LoadLibraryA (0)
+  Symbol: WaitForSingleObject (0)
+  Symbol: CreateEventExA (0)
+  Symbol: GetTimeZoneInformation (0)
+  Symbol: SetEvent (0)
+  Symbol: ResetEvent (0)
+  Symbol: ReleaseSemaphore (0)
+  Symbol: ReleaseMutex (0)
+  Symbol: CreateMutexA (0)
+  Symbol: CreateEventA (0)
+  Symbol: GetCurrentThreadId (0)
+  Symbol: SuspendThread (0)
+  Symbol: ResumeThread (0)
+  Symbol: GetSystemInfo (0)
+  Symbol: SetThreadAffinityMask (0)
+  Symbol: CreateSemaphoreA (0)
+  Symbol: VirtualFree (0)
+  Symbol: InitializeCriticalSection (0)
+  Symbol: DeleteCriticalSection (0)
+  Symbol: SetErrorMode (0)
+  Symbol: QueryPerformanceFrequency (0)
+  Symbol: OutputDebugStringA (0)
+  Symbol: GetCurrentProcessId (0)
+  Symbol: TlsAlloc (0)
+  Symbol: TlsSetValue (0)
+  Symbol: TlsFree (0)
+  Symbol: InitializeCriticalSectionAndSpinCount (0)
+  Symbol: RaiseException (0)
+  Symbol: CreateThread (0)
+  Symbol: GetThreadPriority (0)
+  Symbol: GetExitCodeThread (0)
+  Symbol: GetModuleHandleW (0)
+  Symbol: CreateSemaphoreW (0)
+  Symbol: GetCurrentProcess (0)
+  Symbol: GetModuleFileNameA (0)
+  Symbol: LoadLibraryW (0)
+  Symbol: VirtualQuery (0)
+  Symbol: CreateDirectoryW (0)
+  Symbol: CreateFileW (0)
+  Symbol: FindClose (0)
+  Symbol: FindFirstFileW (0)
+  Symbol: FindNextFileW (0)
+  Symbol: GetFileAttributesW (0)
+  Symbol: GetFullPathNameW (0)
+  Symbol: RemoveDirectoryW (0)
+  Symbol: SetFileAttributesW (0)
+  Symbol: CancelIo (0)
+  Symbol: SleepEx (0)
+  Symbol: WaitForSingleObjectEx (0)
+  Symbol: QueueUserAPC (0)
+  Symbol: GetSystemTimeAsFileTime (0)
+  Symbol: CopyFileW (0)
+  Symbol: MoveFileExW (0)
+  Symbol: ReadDirectoryChangesW (0)
+  Symbol: VerSetConditionMask (0)
+  Symbol: SetHandleInformation (0)
+  Symbol: VerifyVersionInfoW (0)
+  Symbol: FlushFileBuffers (0)
+  Symbol: SetFilePointer (0)
+  Symbol: WriteFile (0)
+  Symbol: GlobalAlloc (0)
+  Symbol: GlobalLock (0)
+  Symbol: GlobalUnlock (0)
+  Symbol: SetLastError (0)
+  Symbol: GetTickCount (0)
+  Symbol: FormatMessageA (0)
+  Symbol: GetStdHandle (0)
+  Symbol: GetFileType (0)
+  Symbol: ReadFile (0)
+  Symbol: PeekNamedPipe (0)
+  Symbol: WaitForMultipleObjects (0)
+  Symbol: VirtualProtect (0)
+  Symbol: CreateEventW (0)
+  Symbol: LocalAlloc (0)
+  Symbol: GetSystemDirectoryW (0)
+  Symbol: LoadLibraryExW (0)
+  Symbol: CreateProcessW (0)
+  Symbol: GetSystemDefaultLangID (0)
+  Symbol: GetSystemDefaultLCID (0)
+  Symbol: FileTimeToLocalFileTime (0)
+  Symbol: LocalFileTimeToFileTime (0)
+  Symbol: GetLocalTime (0)
+  Symbol: FileTimeToSystemTime (0)
+  Symbol: SystemTimeToFileTime (0)
+  Symbol: TryEnterCriticalSection (0)
+  Symbol: PulseEvent (0)
+  Symbol: TerminateThread (0)
+  Symbol: GetProcessAffinityMask (0)
+  Symbol: SetProcessAffinityMask (0)
+  Symbol: GetTempFileNameW (0)
+  Symbol: GetUserDefaultLangID (0)
+  Symbol: GetDriveTypeW (0)
+  Symbol: GetModuleFileNameW (0)
+  Symbol: GetFileInformationByHandle (0)
+  Symbol: SetEndOfFile (0)
+  Symbol: GetOverlappedResult (0)
+  Symbol: FormatMessageW (0)
+  Symbol: CreateFileA (0)
+  Symbol: GetDiskFreeSpaceW (0)
+  Symbol: WideCharToMultiByte (0)
+  Symbol: MultiByteToWideChar (0)
+  Symbol: WaitForMultipleObjectsEx (0)
+  Symbol: GetModuleHandleExA (0)
+  Symbol: GetDiskFreeSpaceExW (0)
+  Symbol: DeleteFiber (0)
+  Symbol: ConvertFiberToThread (0)
+  Symbol: RtlVirtualUnwind (0)
+  Symbol: GlobalMemoryStatus (0)
+  Symbol: GetEnvironmentVariableW (0)
+  Symbol: GetConsoleMode (0)
+  Symbol: ReadConsoleA (0)
+  Symbol: ReadConsoleW (0)
+  Symbol: SetConsoleMode (0)
+  Symbol: WriteConsoleW (0)
+  Symbol: GetCurrentDirectoryW (0)
+  Symbol: GetModuleHandleExW (0)
+}
+Import {
+  Name: USER32.dll
+  ImportLookupTableRVA: 0x4C11A28
+  ImportAddressTableRVA: 0x4C14A6C
+  Symbol: SetWindowLongW (0)
+  Symbol: LoadImageW (0)
+  Symbol: GetMessageExtraInfo (0)
+  Symbol: PostMessageW (0)
+  Symbol: DefWindowProcW (0)
+  Symbol: RegisterClassExW (0)
+  Symbol: CreateWindowExW (0)
+  Symbol: DestroyWindow (0)
+  Symbol: IsZoomed (0)
+  Symbol: SendInput (0)
+  Symbol: SetTimer (0)
+  Symbol: KillTimer (0)
+  Symbol: GetSystemMetrics (0)
+  Symbol: GetSystemMenu (0)
+  Symbol: DeleteMenu (0)
+  Symbol: UpdateWindow (0)
+  Symbol: GetWindowRect (0)
+  Symbol: SetCursor (0)
+  Symbol: GetDesktopWindow (0)
+  Symbol: LoadCursorW (0)
+  Symbol: LoadIconW (0)
+  Symbol: GetForegroundWindow (0)
+  Symbol: PeekMessageW (0)
+  Symbol: GetWindowLongW (0)
+  Symbol: TranslateMessage (0)
+  Symbol: DispatchMessageW (0)
+  Symbol: PostQuitMessage (0)
+  Symbol: OpenClipboard (0)
+  Symbol: EmptyClipboard (0)
+  Symbol: SetClipboardData (0)
+  Symbol: CloseClipboard (0)
+  Symbol: GetClipboardData (0)
+  Symbol: MapVirtualKeyW (0)
+  Symbol: RegisterDeviceNotificationW (0)
+  Symbol: GetActiveWindow (0)
+  Symbol: MessageBoxW (0)
+  Symbol: UnregisterDeviceNotification (0)
+  Symbol: CallWindowProcW (0)
+  Symbol: GetWindowLongPtrW (0)
+  Symbol: SetWindowLongPtrW (0)
+  Symbol: GetProcessWindowStation (0)
+  Symbol: GetUserObjectInformationW (0)
+  Symbol: ToAscii (0)
+  Symbol: GetKeyboardState (0)
+  Symbol: GetKeyState (0)
+  Symbol: GetKeyboardLayoutNameW (0)
+  Symbol: AdjustWindowRect (0)
+  Symbol: SetActiveWindow (0)
+  Symbol: SetFocus (0)
+  Symbol: IsIconic (0)
+  Symbol: SetWindowPos (0)
+  Symbol: ShowWindow (0)
+  Symbol: SetForegroundWindow (0)
+  Symbol: SendMessageW (0)
+  Symbol: ClipCursor (0)
+  Symbol: ScreenToClient (0)
+  Symbol: ClientToScreen (0)
+  Symbol: GetCursorPos (0)
+  Symbol: SetCursorPos (0)
+  Symbol: ShowCursor (0)
+  Symbol: GetClientRect (0)
+  Symbol: FindWindowW (0)
+  Symbol: GetMessageW (0)
+}
+Import {
+  Name: GDI32.dll
+  ImportLookupTableRVA: 0x4C112F8
+  ImportAddressTableRVA: 0x4C1433C
+  Symbol: CreateBitmap (0)
+  Symbol: DeleteObject (0)
+}
+Import {
+  Name: ADVAPI32.dll
+  ImportLookupTableRVA: 0x4C111E0
+  ImportAddressTableRVA: 0x4C14224
+  Symbol: CryptAcquireContextA (0)
+  Symbol: CryptDestroyKey (0)
+  Symbol: CryptGenRandom (0)
+  Symbol: ReportEventW (0)
+  Symbol: RegisterEventSourceW (0)
+  Symbol: DeregisterEventSource (0)
+  Symbol: SystemFunction036 (0)
+  Symbol: CryptAcquireContextW (0)
+  Symbol: CryptDestroyHash (0)
+  Symbol: CryptHashData (0)
+  Symbol: CryptCreateHash (0)
+  Symbol: CryptEnumProvidersW (0)
+  Symbol: CryptSignHashW (0)
+  Symbol: CryptDecrypt (0)
+  Symbol: CryptExportKey (0)
+  Symbol: CryptGetUserKey (0)
+  Symbol: CryptGetProvParam (0)
+  Symbol: InitializeSecurityDescriptor (0)
+  Symbol: SetSecurityDescriptorDacl (0)
+  Symbol: GetUserNameW (0)
+  Symbol: GetUserNameA (0)
+  Symbol: CryptGetHashParam (0)
+  Symbol: CryptReleaseContext (0)
+  Symbol: CryptSetHashParam (0)
+}
+Import {
+  Name: SHELL32.dll
+  ImportLookupTableRVA: 0x4C119F8
+  ImportAddressTableRVA: 0x4C14A3C
+  Symbol: SHGetFolderPathW (0)
+  Symbol: DragQueryFileW (0)
+  Symbol: DragAcceptFiles (0)
+  Symbol: DragFinish (0)
+  Symbol: CommandLineToArgvW (0)
+}
+Import {
+  Name: ole32.dll
+  ImportLookupTableRVA: 0x4C11FD0
+  ImportAddressTableRVA: 0x4C15014
+  Symbol: PropVariantClear (0)
+  Symbol: CoInitializeEx (0)
+  Symbol: CoCreateInstance (0)
+  Symbol: CoSetProxyBlanket (0)
+  Symbol: CoUninitialize (0)
+  Symbol: CoTaskMemFree (0)
+  Symbol: CoCreateGuid (0)
+  Symbol: CoTaskMemAlloc (0)
+  Symbol: CoInitialize (0)
+}
+Import {
+  Name: OLEAUT32.dll
+  ImportLookupTableRVA: 0x4C119A8
+  ImportAddressTableRVA: 0x4C149EC
+  Symbol:  (9)
+  Symbol:  (6)
+  Symbol:  (2)
+}
+Import {
+  Name: IMM32.dll
+  ImportLookupTableRVA: 0x4C11310
+  ImportAddressTableRVA: 0x4C14354
+  Symbol: ImmDisableIME (0)
+}
+Import {
+  Name: SETUPAPI.dll
+  ImportLookupTableRVA: 0x4C119C8
+  ImportAddressTableRVA: 0x4C14A0C
+  Symbol: SetupDiGetDeviceInstanceIdW (0)
+  Symbol: SetupDiGetClassDevsW (0)
+  Symbol: SetupDiGetDeviceInterfaceDetailW (0)
+  Symbol: SetupDiEnumDeviceInterfaces (0)
+  Symbol: SetupDiDestroyDeviceInfoList (0)
+}
+Import {
+  Name: WLDAP32.dll
+  ImportLookupTableRVA: 0x4C11CC0
+  ImportAddressTableRVA: 0x4C14D04
+  Symbol:  (79)
+  Symbol:  (30)
+  Symbol:  (200)
+  Symbol:  (301)
+  Symbol:  (35)
+  Symbol:  (33)
+  Symbol:  (32)
+  Symbol:  (27)
+  Symbol:  (26)
+  Symbol:  (22)
+  Symbol:  (41)
+  Symbol:  (50)
+  Symbol:  (60)
+  Symbol:  (211)
+  Symbol:  (46)
+  Symbol:  (143)
+}
+Import {
+  Name: XINPUT1_4.dll
+  ImportLookupTableRVA: 0x4C11E98
+  ImportAddressTableRVA: 0x4C14EDC
+  Symbol:  (3)
+  Symbol:  (2)
+}
+Import {
+  Name: DINPUT8.dll
+  ImportLookupTableRVA: 0x4C112E8
+  ImportAddressTableRVA: 0x4C1432C
+  Symbol: DirectInput8Create (0)
+}
+Import {
+  Name: KERNEL32.DLL
+  ImportLookupTableRVA: 0x4C120C8
+  ImportAddressTableRVA: 0x4C1510C
+  Symbol: GetThreadContext (0)
+  Symbol: AddVectoredExceptionHandler (0)
+  Symbol: RemoveVectoredExceptionHandler (0)
+  Symbol: HeapLock (0)
+  Symbol: HeapWalk (0)
+  Symbol: HeapUnlock (0)
+}
+DelayImport {
+  Name: EOSSDK-Win64-Shipping.dll
+  Attributes: 0x1
+  ModuleHandle: 0x485CF88
+  ImportAddressTable: 0x3D61CC8
+  ImportNameTable: 0x3B0A1A0
+  BoundDelayImportTable: 0x0
+  UnloadDelayImportTable: 0x0
+  Import {
+    Symbol: EOS_ByteArray_ToString (0)
+    Address: 0x1424D59E4
+  }
+  Import {
+    Symbol: EOS_ProductUserId_IsValid (0)
+    Address: 0x1424D5A69
+  }
+  Import {
+    Symbol: EOS_ProductUserId_ToString (0)
+    Address: 0x1424D5A75
+  }
+  Import {
+    Symbol: EOS_ProductUserId_FromString (0)
+    Address: 0x1424D5A81
+  }
+  Import {
+    Symbol: EOS_Initialize (0)
+    Address: 0x1424D5A8D
+  }
+  Import {
+    Symbol: EOS_Shutdown (0)
+    Address: 0x1424D5A99
+  }
+  Import {
+    Symbol: EOS_Platform_Create (0)
+    Address: 0x1424D5AA5
+  }
+  Import {
+    Symbol: EOS_Platform_Release (0)
+    Address: 0x1424D5AB1
+  }
+  Import {
+    Symbol: EOS_Connect_Login (0)
+    Address: 0x1424D5ABD
+  }
+  Import {
+    Symbol: EOS_Connect_CreateUser (0)
+    Address: 0x1424D5AC9
+  }
+  Import {
+    Symbol: EOS_Connect_GetLoginStatus (0)
+    Address: 0x1424D5AD5
+  }
+  Import {
+    Symbol: EOS_Connect_AddNotifyAuthExpiration (0)
+    Address: 0x1424D5AE1
+  }
+  Import {
+    Symbol: EOS_Connect_RemoveNotifyAuthExpiration (0)
+    Address: 0x1424D5AED
+  }
+  Import {
+    Symbol: EOS_Connect_AddNotifyLoginStatusChanged (0)
+    Address: 0x1424D5AF9
+  }
+  Import {
+    Symbol: EOS_Connect_RemoveNotifyLoginStatusChanged (0)
+    Address: 0x1424D5B05
+  }
+  Import {
+    Symbol: EOS_Platform_Tick (0)
+    Address: 0x1424D5B11
+  }
+  Import {
+    Symbol: EOS_Platform_GetConnectInterface (0)
+    Address: 0x1424D5B1D
+  }
+  Import {
+    Symbol: EOS_Platform_GetAntiCheatClientInterface (0)
+    Address: 0x1424D5B29
+  }
+  Import {
+    Symbol: EOS_Platform_GetReportsInterface (0)
+    Address: 0x1424D5B35
+  }
+  Import {
+    Symbol: EOS_Logging_SetCallback (0)
+    Address: 0x1424D5B41
+  }
+  Import {
+    Symbol: EOS_Logging_SetLogLevel (0)
+    Address: 0x1424D5B4D
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_AddNotifyMessageToPeer (0)
+    Address: 0x1424D5B59
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_AddNotifyPeerActionRequired (0)
+    Address: 0x1424D5B65
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_RemoveNotifyPeerActionRequired (0)
+    Address: 0x1424D5B71
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_AddNotifyPeerAuthStatusChanged (0)
+    Address: 0x1424D5B7D
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_RemoveNotifyPeerAuthStatusChanged (0)
+    Address: 0x1424D5B89
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_BeginSession (0)
+    Address: 0x1424D5B95
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_EndSession (0)
+    Address: 0x1424D5BA1
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_PollStatus (0)
+    Address: 0x1424D5BAD
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_RegisterPeer (0)
+    Address: 0x1424D5BB9
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_UnregisterPeer (0)
+    Address: 0x1424D5BC5
+  }
+  Import {
+    Symbol: EOS_AntiCheatClient_ReceiveMessageFromPeer (0)
+    Address: 0x1424D5BD1
+  }
+}

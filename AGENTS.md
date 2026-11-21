@@ -46,8 +46,13 @@ entre módulos. Ver `docs/01-arquitectura.md`.
   registran en `analysis/` con referencia a la evidencia, no en comentarios
   sueltos.
 - Versiones fijadas del binario objetivo: `eldenring.exe` SHA-256
-  `5d0b85d2bb86b61632705023690b3bd5c4d0bae06308db2eed50849bd37db611`. Todo
-  offset/dirección documentada se refiere a esa build.
+  `f9118fea2cfd8fa3901e8060bfadb1552cb2471771ded8a5b662c4e298ffb328`
+  (v1.17.2, image base `0x140000000`). Todo offset/dirección documentada
+  se refiere a esa build — la tabla de port desde la build vieja
+  (`5d0b85d2…`) y el método para re-derivarlo están en
+  `analysis/09-port-1172-offsets.md`. La build vieja ya no existe en la
+  máquina; su snapshot funcional quedó en el commit inicial de Git +
+  `backups/er_local_mp-5d0b85d2.dll` (fuera del repo).
 
 ## Toolchain
 
@@ -73,23 +78,25 @@ entre módulos. Ver `docs/01-arquitectura.md`.
 
 ## Estado al 2026-11 (ver `docs/04-estado-y-roadmap.md` para el detalle)
 
-**LOGRADO — multijugador local/offline real:** dos instancias
-(`eldenring.exe` + `eldenring_p2.exe`) corren co-op verificado en juego:
-summon sign → lobby → P2P UDP → mundo compartido → Margit >120 s sin
-desconexión. Mensajes, manchas de sangre, fantasmas, signos y evaluación
-de mensajes funcionan end-to-end.
+**EN CURSO — port a 1.17.2:** el binario nuevo es
+`f9118fea…b328`; los offsets del mod ya están portados (ver
+`analysis/09-port-1172-offsets.md`) y el DLL compila limpio. Falta la
+verificación en runtime (loader + login + co-op).
 
-**fnserver.py** implementa: FN cifrado completo, heartbeat `07 64`,
-bloodmessages (+persistencia JSON), bloodstains (+`GetDeadingGhost`),
-ghostdata, signos playregion/puddle, summon/reject pushes, lobbies UDP,
-`BREAKIN_POOL`/`BREAKIN_ATTEMPTS` + pushes 0x2/0x3/0x4 (invasiones:
-implementado, pendiente de verificación en juego).
+**VERIFICADO en build vieja `5d0b85d2` (snapshot en Git + backups/):**
+dos instancias corrieron co-op real (summon sign → lobby → P2P →
+Margit >120 s), mensajes, manchas, fantasmas, signos y evaluación
+end-to-end; invasión implementada sin verificar.
 
-**er_local_mp.dll** implementa: shim WinHTTP→fnserver, EOS offline
-(+watchdog peer-auth 120 s desactivado via `AuthStatus=2`, sin tocar
-`.text`), shims Steam completos, CSteamID sintético por instancia,
-transporte UDP multicanal, mutex por proceso, logs separados.
+**Nuevo — `mode=steam` (híbrido OnlineFix):** `[net] session=steam`
+delega interfaces Steam a la emu cargada (sin wrapping, SteamID64 real
+como `external_id`); `[net] session=direct` conserva el transporte UDP
+propio + lobbies sintéticos. `fnserver.py` sigue siendo necesario en
+ambos modos (el protocolo FN no es Steamworks). Diseño en
+`analysis/08-seamless-y-onlinefix.md` + `analysis/09-port-1172-offsets.md`.
 
-**Pendiente:** verificar invasión en juego (Lengua + dedo), LAN 2 PCs,
-persistencia de manchas/fantasmas, QuickMatch/Visit, 3+ jugadores,
-empaquetado.
+**Pendiente:** verificación en runtime del port (login, signos, co-op),
+restaurar loader + `eldenring_p2.exe` (mutex: segundo descriptor
+`CreateMutexW` en `0x4c145ec` / `"Global\SekiroMutex"` UTF-16), verificar
+invasión, LAN 2 PCs / `mode=steam` Internet, persistencia de
+manchas/fantasmas, 3+ jugadores, empaquetado.

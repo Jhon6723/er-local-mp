@@ -1,6 +1,6 @@
-// Shim local offline de EOS (32 slots delay-load en 0x143d5ac58..0x143d5ad50).
+// Shim local offline de EOS (32 slots delay-load en 0x143d61cc8..0x143d61dc0).
 // Resuelve EOS_Connect_Login en local sin trafico externo hacia Epic/EAC.
-// FRONTERA BINARIO: eldenring.exe sha256 5d0b85d2...
+// FRONTERA BINARIO: eldenring.exe sha256 f9118fea...b328 (v1.17.2)
 #include "eos_shim.h"
 #include <atomic>
 #include <cstdint>
@@ -26,9 +26,9 @@ struct EOS_Connect_LoginCallbackInfo {
 };
 
 struct EOS_AC_PeerAuthCallbackInfo {
-    void*   ClientData;       // +0x00: eosMgr (ver 0x140de1e93)
-    void*   PeerHandle;       // +0x08: clave en [eosMgr+0x88] (ver 0x140de1e96)
-    int32_t AuthStatus;       // +0x10: 2 = RemoteAuthComplete -> [peer+0x54]=-1.0f (0x140de2051)
+    void*   ClientData;       // +0x00: eosMgr
+    void*   PeerHandle;       // +0x08: clave en [eosMgr+0x88]
+    int32_t AuthStatus;       // +0x10: 2 = RemoteAuthComplete -> [peer+0x54]=-1.0f (0x140de5561)
     int32_t _pad;
 };
 
@@ -124,7 +124,8 @@ void __stdcall f_Platform_Release(void*) {}
 void __stdcall f_Connect_Login(void* h, const void*, void* client_data, EOS_Connect_OnLoginCallback cb) {
     log::info("eos: Connect_Login h=%p clientData=%p cb=%p", h, client_data, cb);
     if (client_data) {
-        // Garantizar que eosMgr->hAntiCheatClient (+0x10) no sea nulo (compuerta 0x140de2670)
+        // Garantizar que eosMgr->hAntiCheatClient (+0x10) no sea nulo —
+        // la compuerta es mov rcx,[rbx+0x10] en la fn de sesion (0xde5b80).
         auto** ac_slot = (void**)((uint8_t*)client_data + 0x10);
         if (*ac_slot == nullptr) {
             *ac_slot = (void*)0xE050AC01ULL;
@@ -157,7 +158,7 @@ uint64_t __stdcall f_AddNotify(void*, const void*, void*, void*) {
 }
 void __stdcall f_RemoveNotify(void*, uint64_t) {}
 
-// [24] EOS_AntiCheatClient_AddNotifyPeerAuthStatusChanged (0x3d5ad18)
+// [24] EOS_AntiCheatClient_AddNotifyPeerAuthStatusChanged (0x3d61d88)
 uint64_t __stdcall f_AddNotifyPeerAuth(void*, const void*, void* client_data, void* cb) {
     std::lock_guard<std::mutex> lk(g_mtx);
     g_peer_auth_cd = client_data;
@@ -229,7 +230,7 @@ int32_t __stdcall f_AC_EndSession(void*, const void*) {
     return 0;
 }
 int32_t __stdcall f_AC_PollStatus(void*, const void*, int32_t* out_type, char* out_msg) {
-    // 18 (0x12) = EOS_NotFound (cola vacia, sin infracciones; ver 0x140ddfd48)
+    // 18 (0x12) = EOS_NotFound (cola vacia, sin infracciones)
     if (out_type) *out_type = 0;
     if (out_msg) out_msg[0] = '\0';
     return 18;
@@ -246,39 +247,42 @@ int32_t __stdcall f_AC_RegisterPeer(void*, const void* opts) {
 int32_t __stdcall f_AC_UnregisterPeer(void*, const void*) { return 0; }
 int32_t __stdcall f_AC_ReceiveMessageFromPeer(void*, const void*) { return 0; }
 
+// Delay-IAT EOSSDK @ 0x3D61CC8 (build f9118fea; orden identico a build vieja —
+// verificado vs. callsites: Connect_Login 0x3d61d08, AddNotifyPeerAuth
+// 0x3d61d88, RegisterPeer 0x3d61db0, ReceiveMessageFromPeer 0x3d61dc0).
 static void* const EOS_SLOTS[32] = {
-    (void*)f_ByteArray_ToString,           // [0]  0x3d5ac58
-    (void*)f_ProductUserId_IsValid,        // [1]  0x3d5ac60
-    (void*)f_ProductUserId_ToString,       // [2]  0x3d5ac68
-    (void*)f_ProductUserId_FromString,     // [3]  0x3d5ac70
-    (void*)f_Initialize,                   // [4]  0x3d5ac78
-    (void*)f_Shutdown,                     // [5]  0x3d5ac80
-    (void*)f_Platform_Create,              // [6]  0x3d5ac88
-    (void*)f_Platform_Release,             // [7]  0x3d5ac90
-    (void*)f_Connect_Login,                // [8]  0x3d5ac98
-    (void*)f_Connect_CreateUser,           // [9]  0x3d5aca0
-    (void*)f_Connect_GetLoginStatus,       // [10] 0x3d5aca8
-    (void*)f_AddNotify,                    // [11] 0x3d5acb0
-    (void*)f_RemoveNotify,                 // [12] 0x3d5acb8
-    (void*)f_AddNotify,                    // [13] 0x3d5acc0
-    (void*)f_RemoveNotify,                 // [14] 0x3d5acc8
-    (void*)f_Platform_Tick,                // [15] 0x3d5acd0
-    (void*)f_GetConnectInterface,          // [16] 0x3d5acd8
-    (void*)f_GetAntiCheatClientInterface,  // [17] 0x3d5ace0
-    (void*)f_GetReportsInterface,          // [18] 0x3d5ace8
-    (void*)f_Logging_SetCallback,          // [19] 0x3d5acf0
-    (void*)f_Logging_SetLogLevel,          // [20] 0x3d5acf8
-    (void*)f_AddNotify,                    // [21] 0x3d5ad00
-    (void*)f_AddNotify,                    // [22] 0x3d5ad08
-    (void*)f_RemoveNotify,                 // [23] 0x3d5ad10
-    (void*)f_AddNotifyPeerAuth,            // [24] 0x3d5ad18
-    (void*)f_RemoveNotify,                 // [25] 0x3d5ad20
-    (void*)f_AC_BeginSession,              // [26] 0x3d5ad28
-    (void*)f_AC_EndSession,                // [27] 0x3d5ad30
-    (void*)f_AC_PollStatus,                // [28] 0x3d5ad38
-    (void*)f_AC_RegisterPeer,              // [29] 0x3d5ad40
-    (void*)f_AC_UnregisterPeer,            // [30] 0x3d5ad48
-    (void*)f_AC_ReceiveMessageFromPeer,    // [31] 0x3d5ad50
+    (void*)f_ByteArray_ToString,           // [0]  0x3d61cc8
+    (void*)f_ProductUserId_IsValid,        // [1]  0x3d61cd0
+    (void*)f_ProductUserId_ToString,       // [2]  0x3d61cd8
+    (void*)f_ProductUserId_FromString,     // [3]  0x3d61ce0
+    (void*)f_Initialize,                   // [4]  0x3d61ce8
+    (void*)f_Shutdown,                     // [5]  0x3d61cf0
+    (void*)f_Platform_Create,              // [6]  0x3d61cf8
+    (void*)f_Platform_Release,             // [7]  0x3d61d00
+    (void*)f_Connect_Login,                // [8]  0x3d61d08
+    (void*)f_Connect_CreateUser,           // [9]  0x3d61d10
+    (void*)f_Connect_GetLoginStatus,       // [10] 0x3d61d18
+    (void*)f_AddNotify,                    // [11] 0x3d61d20
+    (void*)f_RemoveNotify,                 // [12] 0x3d61d28
+    (void*)f_AddNotify,                    // [13] 0x3d61d30
+    (void*)f_RemoveNotify,                 // [14] 0x3d61d38
+    (void*)f_Platform_Tick,                // [15] 0x3d61d40
+    (void*)f_GetConnectInterface,          // [16] 0x3d61d48
+    (void*)f_GetAntiCheatClientInterface,  // [17] 0x3d61d50
+    (void*)f_GetReportsInterface,          // [18] 0x3d61d58
+    (void*)f_Logging_SetCallback,          // [19] 0x3d61d60
+    (void*)f_Logging_SetLogLevel,          // [20] 0x3d61d68
+    (void*)f_AddNotify,                    // [21] 0x3d61d70
+    (void*)f_AddNotify,                    // [22] 0x3d61d78
+    (void*)f_RemoveNotify,                 // [23] 0x3d61d80
+    (void*)f_AddNotifyPeerAuth,            // [24] 0x3d61d88
+    (void*)f_RemoveNotify,                 // [25] 0x3d61d90
+    (void*)f_AC_BeginSession,              // [26] 0x3d61d98
+    (void*)f_AC_EndSession,                // [27] 0x3d61da0
+    (void*)f_AC_PollStatus,                // [28] 0x3d61da8
+    (void*)f_AC_RegisterPeer,              // [29] 0x3d61db0
+    (void*)f_AC_UnregisterPeer,            // [30] 0x3d61db8
+    (void*)f_AC_ReceiveMessageFromPeer,    // [31] 0x3d61dc0
 };
 
 } // namespace
@@ -307,7 +311,9 @@ static void rehabilitate_eos_mgr(uint8_t* mgr) {
         std::lock_guard<std::mutex> lk(g_mtx);
         if (!g_peer_auth_cb) {
             g_peer_auth_cd = mgr;
-            g_peer_auth_cb = (EOS_AC_OnPeerAuthCallback)(base + 0xde1e60);
+            // Handler nativo PeerAuthStatusChanged: fn 0xde5370 (escribe -1.0f
+            // en [peer+0x54] @0x140de5561; registrado por lea r9 @0x140de5d45).
+            g_peer_auth_cb = (EOS_AC_OnPeerAuthCallback)(base + 0xde5370);
             if (*(uint64_t*)(mgr + 0x68) == 0) *(uint64_t*)(mgr + 0x68) = ++g_next_notify;
         }
     }
@@ -330,7 +336,7 @@ static DWORD WINAPI eos_mgr_watcher(LPVOID arg) {
 
 bool eos::install() {
     auto* base = (uint8_t*)GetModuleHandleA(nullptr);
-    auto** iat = (void**)(base + 0x3d5ac58);
+    auto** iat = (void**)(base + 0x3d61cc8);
     DWORD old = 0;
     if (!VirtualProtect(iat, sizeof(void*) * 32, PAGE_READWRITE, &old)) {
         log::err("eos: VirtualProtect failed err=%lu", GetLastError());
@@ -342,8 +348,10 @@ bool eos::install() {
     VirtualProtect(iat, sizeof(void*) * 32, old, &old);
     log::info("eos: 32/32 delay-IAT slots patched");
 
-    // g_eosMgr @ 0x143d855c8 (rva 0x3d855c8): creado antes del delay de 5s del loader
-    auto* mgr_slot = (uint8_t**)(base + 0x3d855c8);
+    // g_eosMgr @ 0x143d8c660 (rva 0x3d8c660): leido por los orquestadores EOS
+    // antes de llamar watchdog/session (mov rcx,[rip]->0x3d8c660 en 0xc91a90,
+    // 0xdec990, 0xded4b0, 0xded8d0).
+    auto* mgr_slot = (uint8_t**)(base + 0x3d8c660);
     if (*mgr_slot) {
         rehabilitate_eos_mgr(*mgr_slot);
     } else {

@@ -1,5 +1,6 @@
 // FRONTERA BINARIO: todas las direcciones/offsets del exe viven aqui.
-// Build: eldenring.exe sha256 5d0b85d2... (ver analysis/01..06)
+// Build: eldenring.exe sha256 f9118fea...b328 (v1.17.2, ver analysis/09..10)
+// Re-derivacion de offsets: analysis/probe*_1172.py
 #include "hooks.h"
 #include "eos_shim.h"
 #include "winhttp_shim.h"
@@ -27,6 +28,9 @@ uint32_t g_net_acct = 0;
 uint64_t g_net_sid  = 0;
 char     g_ctl_ip[64] = "127.0.0.1";
 uint16_t g_ctl_port   = 37017;
+// [net]session=direct|steam — direct = transporte UDP propio + lobbies sinteticos;
+// steam = delegar interfaces a steam_api64.dll (OnlineFix emu) sin wrapping.
+bool     g_steam_mode = false;
 
 // ---- Callbacks & CallResults sinteticos de Steamworks -----------------------
 constexpr uint64_t SYNTH_CALL_PREFIX = 0x57EA000000000000ULL;
@@ -580,6 +584,7 @@ RunCallbacks_t    g_orig_runcb   = nullptr;
 
 void* route_interface(const char* ver, void* r) {
     if (!ver) return r;
+    if (g_steam_mode) return r; // mode=steam: passthrough total a OnlineFix
     if (strstr(ver, "SteamNetworking00")) return &g_fake;
     if (strstr(ver, "SteamUser0"))        wrap_steam_user(r);
     else if (strstr(ver, "SteamFriends0")) wrap_steam_friends(r);
@@ -704,14 +709,15 @@ void hook_RunCallbacks() {
 }
 
 struct SEnt { uint32_t rva; void* fn; void** orig; const char* exp; };
+// IAT steam_api64.dll @ base 0x4C1509C (llvm-readobj --coff-imports, build f9118fea)
 SEnt STEAM_IAT[] = {
-    {0x4c0d09c, (void*)hook_FindOrCreate,         (void**)&g_orig_foc,     "SteamInternal_FindOrCreateUserInterface"},
-    {0x4c0d0ec, (void*)hook_CreateInterface,      (void**)&g_orig_ci,      "SteamInternal_CreateInterface"},
-    {0x4c0d0b4, (void*)hook_RegisterCallback,     (void**)&g_orig_regcb,   "SteamAPI_RegisterCallback"},
-    {0x4c0d0fc, (void*)hook_UnregisterCallback,   (void**)&g_orig_unregcb, "SteamAPI_UnregisterCallback"},
-    {0x4c0d0dc, (void*)hook_RegisterCallResult,   (void**)&g_orig_regcr,   "SteamAPI_RegisterCallResult"},
-    {0x4c0d0e4, (void*)hook_UnregisterCallResult, (void**)&g_orig_unregcr, "SteamAPI_UnregisterCallResult"},
-    {0x4c0d0f4, (void*)hook_RunCallbacks,         (void**)&g_orig_runcb,   "SteamAPI_RunCallbacks"},
+    {0x4c1509c, (void*)hook_FindOrCreate,         (void**)&g_orig_foc,     "SteamInternal_FindOrCreateUserInterface"},
+    {0x4c150ec, (void*)hook_CreateInterface,      (void**)&g_orig_ci,      "SteamInternal_CreateInterface"},
+    {0x4c150b4, (void*)hook_RegisterCallback,     (void**)&g_orig_regcb,   "SteamAPI_RegisterCallback"},
+    {0x4c150fc, (void*)hook_UnregisterCallback,   (void**)&g_orig_unregcb, "SteamAPI_UnregisterCallback"},
+    {0x4c150dc, (void*)hook_RegisterCallResult,   (void**)&g_orig_regcr,   "SteamAPI_RegisterCallResult"},
+    {0x4c150e4, (void*)hook_UnregisterCallResult, (void**)&g_orig_unregcr, "SteamAPI_UnregisterCallResult"},
+    {0x4c150f4, (void*)hook_RunCallbacks,         (void**)&g_orig_runcb,   "SteamAPI_RunCallbacks"},
 };
 
 } // namespace
@@ -719,9 +725,6 @@ SEnt STEAM_IAT[] = {
 bool hooks::install() {
     g_exe_base = (uint8_t*)GetModuleHandleA(nullptr);
     uint16_t uport = transport::bound_port() ? transport::bound_port() : 27016;
-    g_net_acct = ((uint32_t)(GetCurrentProcessId() & 0xFFFFU) << 16) | (uint32_t)uport;
-    g_net_sid  = 0x0110000100000000ULL | (uint64_t)g_net_acct;
-    transport::set_local_steam_id(g_net_sid);
 
     char dir[MAX_PATH];
     GetModuleFileNameA(nullptr, dir, MAX_PATH);
@@ -731,9 +734,16 @@ bool hooks::install() {
     snprintf(inip, MAX_PATH, "%ser_local_mp.ini", dir);
     GetPrivateProfileStringA("net", "matchbox_ip", "127.0.0.1", g_ctl_ip, sizeof(g_ctl_ip), inip);
     GetPrivateProfileStringA("fn", "host", g_ctl_ip, g_ctl_ip, sizeof(g_ctl_ip), inip);
+    char sess[32];
+    GetPrivateProfileStringA("net", "session", "direct", sess, sizeof(sess), inip);
+    g_steam_mode = (strcmp(sess, "steam") == 0);
 
-    log::info("hooks: net_sid=0x%llx (acct=0x%x udp=%u ctl=%s:%u)",
-              (unsigned long long)g_net_sid, g_net_acct, uport, g_ctl_ip, g_ctl_port);
+    g_net_acct = ((uint32_t)(GetCurrentProcessId() & 0xFFFFU) << 16) | (uint32_t)uport;
+    g_net_sid  = 0x0110000100000000ULL | (uint64_t)g_net_acct;
+    transport::set_local_steam_id(g_net_sid);
+
+    log::info("hooks: session=%s net_sid=0x%llx (acct=0x%x udp=%u ctl=%s:%u)",
+              sess, (unsigned long long)g_net_sid, g_net_acct, uport, g_ctl_ip, g_ctl_port);
 
     whs::install();
     ws2p::install();
@@ -757,19 +767,37 @@ bool hooks::install() {
     using GetHSteamUser_t = int(*)();
     auto get_huser = (GetHSteamUser_t)GetProcAddress(api, "SteamAPI_GetHSteamUser");
     int hu = get_huser ? get_huser() : 1;
-    if (g_orig_foc) {
+    if (g_steam_mode) {
+        // mode=steam: no wrapping — identidad real de la emu OnlineFix.
+        // Leer el SteamID64 real via vtable[2] (ISteamUser::GetSteamID) para
+        // transporte/EOS/logs; el juego ve el mismo ID en red y save.
+        if (g_orig_foc) {
+            void* su = g_orig_foc(hu, "SteamUser021");
+            if (su) {
+                using GetSteamID_t = uint64_t*(*)(void*, uint64_t*);
+                uint64_t real_id = 0;
+                void** vt = *(void***)su;
+                ((GetSteamID_t)vt[2])(su, &real_id);
+                if (real_id) {
+                    g_net_sid = real_id;
+                    transport::set_local_steam_id(g_net_sid);
+                    log::info("steam: emu SteamID64 -> net_sid=0x%llx", (unsigned long long)g_net_sid);
+                }
+            }
+        }
+    } else if (g_orig_foc) {
         wrap_steam_user(g_orig_foc(hu, "SteamUser021"));
         wrap_steam_friends(g_orig_foc(hu, "SteamFriends017"));
         wrap_steam_utils(g_orig_foc(hu, "SteamUtils010"));
         wrap_steam_matchmaking(g_orig_foc(hu, "SteamMatchMaking009"));
     }
 
-    // Reemplazar punteros cacheados en CounterAndContext si ya fueron inicializados
-    if (void* p = *(void**)(g_exe_base + 0x3b48a10)) wrap_steam_user(p);
-    if (void* p = *(void**)(g_exe_base + 0x3b489e0)) wrap_steam_friends(p);
-    if (void* p = *(void**)(g_exe_base + 0x3b489f8)) wrap_steam_utils(p);
-    if (void* p = *(void**)(g_exe_base + 0x3c51c10)) wrap_steam_matchmaking(p);
-    if (*(void**)(g_exe_base + 0x3c602c0)) *(void**)(g_exe_base + 0x3c602c0) = &g_fake;
+    // NOTA build f9118fea: las interfaces se cachean en campos de objetos
+    // via fns resolver (0x23faff0/0x2644b40/0xe74de0/0xe74e10: FindOrCreate +
+    // store en [rcx]). Los objetos singleton quedan envueltos por las
+    // llamadas proactivas de arriba — los resolvers posteriores heredan la
+    // vtable ya envuelta. Los antiguos slots globales (0x3b48a10 etc.) no
+    // existen en esta build y no deben tocarse.
 
     log::info("steam iat: %d/7 slots patched (su=%d sf=%d ut=%d mm=%d)",
               patched, g_su_wrapped ? 1 : 0, g_sf_wrapped ? 1 : 0,

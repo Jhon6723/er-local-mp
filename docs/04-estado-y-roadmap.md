@@ -1,15 +1,23 @@
 # 04 — Estado final y roadmap
 
-**Estado:** implementada (núcleo) · en progreso (PvP)
+**Estado:** implementada (núcleo, build vieja) · en progreso (port a 1.17.2)
 
 ## Resumen ejecutivo
 
-**Objetivo alcanzado:** multijugador **local y offline** entre dos instancias
-reales de Elden Ring en el mismo PC, **sin servidores de FromSoftware, sin
-Steam y sin anticheat**. El tráfico FN cifrado del juego se sirve con
-`matchbox/fnserver.py`, la coordinación de lobbies y la sesión co-op se
-resuelven sobre UDP local, y todo el gameplay verificado corre dentro del
-proceso real de `eldenring.exe` (REPACK, build fijada en AGENTS.md).
+**Objetivo alcanzado (build vieja `5d0b85d2`):** multijugador **local y
+offline** entre dos instancias reales de Elden Ring en el mismo PC, **sin
+servidores de FromSoftware, sin Steam y sin anticheat**. El tráfico FN
+cifrado del juego se sirve con `matchbox/fnserver.py`, la coordinación de
+lobbies y la sesión co-op se resuelven sobre UDP local.
+
+**Estado actual (build 1.17.2 `f9118fea`):** la instalación vieja se perdió
+al actualizar; el port de offsets a 1.17.2 está hecho y el DLL compila
+limpio (tabla completa en `analysis/09-port-1172-offsets.md`). Además se
+añadió el modo híbrido **`[net] session=steam`**: las interfaces Steamworks
+pasan a la `steam_api64.dll` de OnlineFix sin wrapping (SteamID64 real como
+identidad), mientras `fnserver.py` conserva el protocolo FN — pendiente de
+verificación en runtime. Snapshot funcional de la build vieja: commit
+inicial del repo + `backups/er_local_mp-5d0b85d2.dll`.
 
 ## Verificado en juego (sesiones reales)
 

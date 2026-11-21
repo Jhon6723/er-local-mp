@@ -3,7 +3,8 @@
 // - WinHttpOpenRequest del upgrade WS -> quita WINHTTP_FLAG_SECURE (ws:// plano)
 // - Todo lo demas pasa a winhttp.dll real: el upgrade WS lo hace el stack real
 //   contra nuestro servidor Python local (fnserver.py).
-// - Hook en la derivacion de claves kx de sodium (0x141e69570, pattern waygate):
+// - Hook en la derivacion de claves kx de sodium (0x141e6cb10, pattern waygate
+//   SODIUM_KX_KEY_DERIVE_PATTERN; build f9118fea, unico match en .text):
 //   reemplaza el par preshared del juego por nuestro par conocido, asi ambos
 //   extremos comparten claves sin extraer las originales del binario.
 #include "winhttp_shim.h"
@@ -185,7 +186,8 @@ size_t hk_kx_derive(uintptr_t out, uint8_t* pk, uint8_t* sk) {
 
 // Detour x64 con salto absoluto (mov rax,imm64; jmp rax) + fixup RIP-relative.
 // detour_install usa E9 rel32 que no alcanza nuestro DLL (>2GB del game code).
-// Stolen bytes de 0x141e69570 (21 bytes, 5 instrucciones completas):
+// Stolen bytes de 0x141e6cb10 (21 bytes, 5 instrucciones completas, forma
+// identica a build vieja — disp del cookie difiere pero se lee en runtime):
 //   +0  40 53             push rbx            (2)
 //   +2  48 83 EC 50       sub rsp,0x50        (4)
 //   +6  48 8B 05 <d32>    mov rax,[rip+d]     (7) <- rip-relative, disp en +9
@@ -208,7 +210,7 @@ uint8_t* alloc_exec_near(uintptr_t target) {
 }
 
 bool install_kx_hook(uint8_t* base) {
-    uint8_t* target = base + 0x1e69570;
+    uint8_t* target = base + 0x1e6cb10;
     const int STOLEN = 21;
     uint8_t* tramp = alloc_exec_near((uintptr_t)target);
     if (!tramp) { log::err("whs: kx no near mem"); return false; }
@@ -239,23 +241,28 @@ bool install_kx_hook(uint8_t* base) {
     return true;
 }
 
+// IAT WINHTTP @ 0x4C14C6C (build f9118fea; mismo orden que build vieja).
+// NOTA: KERNEL32 tiene DOS descriptores en esta build — el segundo slot de
+// CreateMutexW (0x4C145EC) es el que usa el single-instance
+// "Global\SekiroMutex" (fn 0x140c91c90, GetLastError==0xb7). Se parchean ambos.
 struct RealEnt { uint32_t rva; void* fn; const char* name; };
 static const RealEnt REAL_IAT[] = {
-    {0x4c0cc6c, (void*)f_SetStatusCallback, "WinHttpSetStatusCallback"},
-    {0x4c0cc74, (void*)f_Open,              "WinHttpOpen"},
-    {0x4c0cc7c, (void*)f_CloseHandle,       "WinHttpCloseHandle"},
-    {0x4c0cc84, (void*)f_Connect,           "WinHttpConnect"},
-    {0x4c0cc8c, (void*)f_QueryOption,       "WinHttpQueryOption"},
-    {0x4c0cc94, (void*)f_SetOption,         "WinHttpSetOption"},
-    {0x4c0cc9c, (void*)f_OpenRequest,       "WinHttpOpenRequest"},
-    {0x4c0cca4, (void*)f_CrackUrl,          "WinHttpCrackUrl"},
-    {0x4c0ccac, (void*)f_WsClose,           "WinHttpWebSocketClose"},
-    {0x4c0ccb4, (void*)f_WsReceive,         "WinHttpWebSocketReceive"},
-    {0x4c0ccbc, (void*)f_WsSend,            "WinHttpWebSocketSend"},
-    {0x4c0ccc4, (void*)f_SendRequest,       "WinHttpSendRequest"},
-    {0x4c0cccc, (void*)f_CompleteUpgrade,   "WinHttpWebSocketCompleteUpgrade"},
-    {0x4c0ccd4, (void*)f_ReceiveResponse,   "WinHttpReceiveResponse"},
-    {0x4c0c5ec, (void*)f_CreateMutexW,      "CreateMutexW"},
+    {0x4c14c6c, (void*)f_SetStatusCallback, "WinHttpSetStatusCallback"},
+    {0x4c14c74, (void*)f_Open,              "WinHttpOpen"},
+    {0x4c14c7c, (void*)f_CloseHandle,       "WinHttpCloseHandle"},
+    {0x4c14c84, (void*)f_Connect,           "WinHttpConnect"},
+    {0x4c14c8c, (void*)f_QueryOption,       "WinHttpQueryOption"},
+    {0x4c14c94, (void*)f_SetOption,         "WinHttpSetOption"},
+    {0x4c14c9c, (void*)f_OpenRequest,       "WinHttpOpenRequest"},
+    {0x4c14ca4, (void*)f_CrackUrl,          "WinHttpCrackUrl"},
+    {0x4c14cac, (void*)f_WsClose,           "WinHttpWebSocketClose"},
+    {0x4c14cb4, (void*)f_WsReceive,         "WinHttpWebSocketReceive"},
+    {0x4c14cbc, (void*)f_WsSend,            "WinHttpWebSocketSend"},
+    {0x4c14cc4, (void*)f_SendRequest,       "WinHttpSendRequest"},
+    {0x4c14ccc, (void*)f_CompleteUpgrade,   "WinHttpWebSocketCompleteUpgrade"},
+    {0x4c14cd4, (void*)f_ReceiveResponse,   "WinHttpReceiveResponse"},
+    {0x4c1439c, (void*)f_CreateMutexW,      "CreateMutexW#1"},
+    {0x4c145ec, (void*)f_CreateMutexW,      "CreateMutexW#2"},
 };
 
 } // namespace
@@ -302,10 +309,10 @@ bool whs::install() {
         VirtualProtect(slot, sizeof(void*), old, &old);
         ++patched;
     }
-    log::info("whs: %d/14 real-IAT slots patched (passthrough, fn_port=%u)", patched, g_fn_port);
+    log::info("whs: %d/15 real-IAT slots patched (passthrough, fn_port=%u)", patched, g_fn_port);
 
     // Hook kx-derive (pattern waygate) con salto absoluto + fixup rip
     install_kx_hook(base);
 
-    return patched == 14 && g_kx_orig != nullptr;
+    return patched == 15 && g_kx_orig != nullptr;
 }
