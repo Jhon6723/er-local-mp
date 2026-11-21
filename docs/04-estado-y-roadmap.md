@@ -42,7 +42,8 @@ commit inicial del repo + `backups/er_local_mp-5d0b85d2.dll`.
 | Perfil de guardado real | ✅ | `GetSteamID` detecta el dir de `%APPDATA%\EldenRing\<sid>` con `ER0000.sl2` más reciente; saves intactos |
 | Idioma sin Steam | ✅ | `SteamApps::GetCurrentGameLanguage` → `[player] language` del ini (`latam` por defecto) |
 | Dos instancias en 1 PC | ✅ | `eldenring_p2.exe` + mutex renombrado por proceso + UDP `27016/27017` dinámicos |
-| Invasiones (BreakIn) | 🟡 implementado | pipeline completo en `fnserver.py`; pendiente de verificación en juego |
+| Duelo PvP (Duelist sign) | ✅ | **entre 2 PCs por Tailscale (1.17.2)**: `CreateSign → SummonSign → push → lobby → fantasma rojo` en el mundo del host |
+| Invasiones (BreakIn) | 🟡 implementado | `GetBreakInTargetList`/`BREAKIN_POOL` operan (host con cooperador ENTRA al pool, `jugadores=2`); pendiente: la Lengua Burlona no se activa en el cliente — posible estado de sesión EOS residual tras co-op (investigar teardown de lobby) |
 
 ## Arquitectura final
 
