@@ -303,8 +303,47 @@ uint64_t* fake_GetSteamID(void* self, uint64_t* out) {
     }
     using Orig_t = uint64_t*(*)(void*, uint64_t*);
     if (g_su_orig_vt[2]) return ((Orig_t)g_su_orig_vt[2])(self, out);
-    // sin cliente Steam: save ID fijo para no romper ER0000.sl2 entre sesiones
-    *out = 0x0110000100000001ULL;
+    // sin cliente Steam: reutilizar el ID del directorio de perfil existente
+    // (%APPDATA%\EldenRing\<steamid>\ER0000.sl2) para no "perder" el save.
+    static uint64_t save_sid = 0;
+    if (!save_sid) {
+        char ad[MAX_PATH];
+        DWORD n = GetEnvironmentVariableA("APPDATA", ad, MAX_PATH);
+        if (n && n < MAX_PATH) {
+            char pat[MAX_PATH];
+            snprintf(pat, sizeof(pat), "%s\\EldenRing\\*", ad);
+            WIN32_FIND_DATAA fd;
+            HANDLE h = FindFirstFileA(pat, &fd);
+            if (h != INVALID_HANDLE_VALUE) {
+                // elegir el dir <steamid> con ER0000.sl2 mas reciente
+                FILETIME newest{};
+                do {
+                    if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) continue;
+                    const char* nm = fd.cFileName;
+                    size_t L = strlen(nm);
+                    if (L < 15 || L > 19) continue;
+                    bool digits = true;
+                    for (size_t i = 0; i < L; ++i)
+                        if (nm[i] < '0' || nm[i] > '9') { digits = false; break; }
+                    if (!digits) continue;
+                    char sv[MAX_PATH];
+                    snprintf(sv, sizeof(sv), "%s\\EldenRing\\%s\\ER0000.sl2", ad, nm);
+                    WIN32_FIND_DATAA sf;
+                    HANDLE hs = FindFirstFileA(sv, &sf);
+                    if (hs == INVALID_HANDLE_VALUE) continue;
+                    FindClose(hs);
+                    if (CompareFileTime(&sf.ftLastWriteTime, &newest) > 0) {
+                        newest = sf.ftLastWriteTime;
+                        save_sid = strtoull(nm, nullptr, 10);
+                    }
+                } while (FindNextFileA(h, &fd));
+                FindClose(h);
+            }
+        }
+        if (!save_sid) save_sid = 0x0110000100000001ULL;
+        log::info("steam: save SteamID = 0x%llx", (unsigned long long)save_sid);
+    }
+    *out = save_sid;
     return out;
 }
 
@@ -373,8 +412,16 @@ void commit_vtable(void* iface, void** custom_vt) {
     VirtualProtect(iface, sizeof(void*), old, &old);
 }
 
+int      su_huser()    { return 1; }
+bool     su_loggedon() { return true; }
+uint32_t su_no_voice() { return 3; } // k_EVoiceResultNoData
+
 void apply_su_fakes(void** vt) {
+    vt[0]  = (void*)su_huser;                        // GetHSteamUser
+    vt[1]  = (void*)su_loggedon;                     // BLoggedOn
     vt[2]  = (void*)fake_GetSteamID;
+    vt[7]  = (void*)su_no_voice;                     // GetAvailableVoice
+    vt[8]  = (void*)su_no_voice;                     // GetVoice
     vt[13] = (void*)fake_GetAuthSessionTicket;
     vt[14] = (void*)fake_BeginAuthSession;
     vt[15] = (void*)fake_EndAuthSession;
@@ -573,25 +620,57 @@ void wrap_steam_matchmaking(void* mm) {
 
 // ---- ifaces falsos autocontenidos (directo sin cliente Steam) ----------------
 // El iface es un puntero a una celda con la vtable; slots no mapeados -> 0.
-uint64_t    vt_stub()       { return 0; }
-const char* vt_stub_str()   { return ""; }
-uint32_t    vt_stub_appid() { return 1245620; }
+char g_game_lang[32]   = "latam";
+char g_persona_name[64]= "Tarnished";
+
+uint64_t    vt_stub()        { return 0; }
+bool        vt_stub_true()   { return true; }
+const char* vt_stub_str()    { return ""; }
+uint32_t    vt_stub_appid()  { return 1245620; }
+uint32_t    ut_universe()    { return 1; } // k_EUniversePublic
+uint32_t    ut_server_time() { return (uint32_t)(GetTickCount64() / 1000ULL + 1700000000ULL); }
+const char* ut_ip_country()  { return "CO"; }
+const char* sf_persona_name(){ return g_persona_name; }
+const char* apps_game_lang() { return g_game_lang; }
+const char* apps_avail_lang(){ return "english,spanish,latam"; }
+bool ustats_get_ach(void*, const char*, bool* pb) { if (pb) *pb = false; return true; }
 
 void* g_fake_su_vt[40], *g_fake_sf_vt[64], *g_fake_ut_vt[40], *g_fake_mm_vt[48];
+void* g_fake_apps_vt[32], *g_fake_ustats_vt[48], *g_fake_client_vt[40];
 void* g_fake_su_obj = nullptr, *g_fake_sf_obj = nullptr,
-      *g_fake_ut_obj = nullptr, *g_fake_mm_obj = nullptr;
+      *g_fake_ut_obj = nullptr, *g_fake_mm_obj = nullptr,
+      *g_fake_apps_obj = nullptr, *g_fake_ustats_obj = nullptr,
+      *g_fake_client_obj = nullptr;
 
 void apply_sf_fakes(void** vt) {
-    vt[0] = (void*)vt_stub_str;                 // GetPersonaName
+    vt[0] = (void*)sf_persona_name;             // GetPersonaName
     vt[7] = (void*)fake_GetFriendPersonaName;   // +0x38
 }
 void apply_ut_fakes(void** vt) {
-    vt[4]  = (void*)vt_stub_str;                 // GetIPCountry
+    vt[2]  = (void*)ut_universe;                 // GetConnectedUniverse
+    vt[3]  = (void*)ut_server_time;              // GetServerRealTime
+    vt[4]  = (void*)ut_ip_country;               // GetIPCountry
     vt[9]  = (void*)vt_stub_appid;               // GetAppID
     vt[11] = (void*)fake_IsAPICallCompleted;     // +0x58
     vt[12] = (void*)fake_GetAPICallFailureReason;// +0x60
     vt[13] = (void*)fake_GetAPICallResult;       // +0x68
 }
+void apply_apps_fakes(void** vt) {
+    vt[0]  = (void*)vt_stub_true;                // BIsSubscribed
+    vt[4]  = (void*)apps_game_lang;              // GetCurrentGameLanguage (+0x20)
+    vt[5]  = (void*)apps_avail_lang;             // GetAvailableGameLanguages (+0x28)
+    vt[6]  = (void*)vt_stub_true;                // BIsSubscribedApp (+0x30)
+    vt[7]  = (void*)vt_stub_true;                // BIsDlcInstalled (+0x38, SotE + DLCs)
+    vt[19] = (void*)vt_stub_true;                // BIsAppInstalled (+0x98)
+}
+void apply_ustats_fakes(void** vt) {
+    vt[0]  = (void*)vt_stub_true;                // RequestCurrentStats (+0x00)
+    vt[4]  = (void*)vt_stub_true;                // SetStat (+0x20)
+    vt[6]  = (void*)ustats_get_ach;              // GetAchievement (+0x30)
+    vt[7]  = (void*)vt_stub_true;                // SetAchievement (+0x38)
+    vt[10] = (void*)vt_stub_true;                // StoreStats (+0x50)
+}
+void apply_client_fakes(void**) {}
 void apply_mm_fakes(void** vt) {
     vt[13] = (void*)fake_CreateLobby;            // +0x68
     vt[14] = (void*)fake_JoinLobby;              // +0x70
@@ -661,19 +740,35 @@ void* route_interface(const char* ver, void* r) {
         if (r) { wrap_steam_matchmaking(r); return r; }
         return make_fake_iface(&g_fake_mm_obj, g_fake_mm_vt, 48, apply_mm_fakes, ver);
     }
+    if (strstr(ver, "STEAMAPPS_INTERFACE_VERSION")) {
+        if (r) return r;
+        return make_fake_iface(&g_fake_apps_obj, g_fake_apps_vt, 32, apply_apps_fakes, ver);
+    }
+    if (strstr(ver, "STEAMUSERSTATS_INTERFACE_VERSION")) {
+        if (r) return r;
+        return make_fake_iface(&g_fake_ustats_obj, g_fake_ustats_vt, 48, apply_ustats_fakes, ver);
+    }
+    if (strstr(ver, "SteamClient0")) {
+        if (r) return r;
+        return make_fake_iface(&g_fake_client_obj, g_fake_client_vt, 40, apply_client_fakes, ver);
+    }
     return r;
 }
 
 void* hook_CreateInterface(const char* ver) {
     // directo: la impl real sin cliente Steam puede crashear; usamos fakes propios
     void* r = (g_steam_mode && g_orig_ci) ? g_orig_ci(ver) : nullptr;
-    log::info("steam: CreateInterface(%s) -> %p", ver ? ver : "?", r);
+    uintptr_t ra = (uintptr_t)__builtin_return_address(0) - (uintptr_t)g_exe_base;
+    log::info("steam: CreateInterface(%s) -> %p ra=exe+0x%llx", ver ? ver : "?", r,
+              (unsigned long long)ra);
     return route_interface(ver, r);
 }
 
 void* hook_FindOrCreate(int hUser, const char* ver) {
     void* r = (g_steam_mode && g_orig_foc) ? g_orig_foc(hUser, ver) : nullptr;
-    log::info("steam: FindOrCreate(%d,%s) -> %p", hUser, ver ? ver : "?", r);
+    uintptr_t ra = (uintptr_t)__builtin_return_address(0) - (uintptr_t)g_exe_base;
+    log::info("steam: FindOrCreate(%d,%s) -> %p ra=exe+0x%llx", hUser, ver ? ver : "?", r,
+              (unsigned long long)ra);
     return route_interface(ver, r);
 }
 
@@ -692,23 +787,25 @@ bool hook_RestartApp(uint32_t appid) {
     return false;
 }
 
-// El juego trata el retorno de ContextInit como ctx* -> obj -> vtable y
-// llama vfuncs ([+0x30] al menos) esperando true. En directo devolvemos una
-// estructura falsa con todos los slots -> true; en steam delegamos al real.
-bool ctx_bootstrap_ok() { return true; }
-void* g_ctx_vt[64]    = {};
-void* g_ctx_obj       = nullptr;
-void* g_ctx_inner[1]  = {};
+// En el SDK de Steamworks cada accessor (SteamApps(), SteamUser(), etc.) pasa
+// un bloque estatico { void(*pfn)(void*), uintptr_t counter, void* iface... }.
+// SteamInternal_ContextInit invoca pfn(p + 0x10) una vez para poblar el slot
+// mediante FindOrCreateUserInterface/CreateInterface y retorna (p + 0x10).
+struct SteamCtxInitData {
+    void (*pfn)(void*);
+    uintptr_t counter;
+};
 
 void* hook_ContextInit(void* p) {
-    if (g_steam_mode && g_orig_ctx) return g_orig_ctx(p); // mismo tipo
-    if (!g_ctx_obj) {
-        for (auto& s : g_ctx_vt) s = (void*)ctx_bootstrap_ok;
-        g_ctx_obj      = g_ctx_vt;
-        g_ctx_inner[0] = &g_ctx_obj;
-        log::info("steam: ContextInit -> fake ctx");
+    if (g_steam_mode && g_orig_ctx) return g_orig_ctx(p);
+    if (!p) return nullptr;
+    auto* d = (SteamCtxInitData*)p;
+    void* ctx = (uint8_t*)p + 0x10;
+    if (d->pfn && d->counter != 1) {
+        d->counter = 1;
+        d->pfn(ctx);
     }
-    return g_ctx_inner;
+    return ctx;
 }
 
 int hook_GetHSteamUser() {
@@ -717,6 +814,9 @@ int hook_GetHSteamUser() {
 }
 
 void hook_RegisterCallback(void* cb, int iCallback) {
+    uintptr_t ra = (uintptr_t)__builtin_return_address(0) - (uintptr_t)g_exe_base;
+    log::info("steam: RegisterCallback(cb=%p, id=0x%x) ra=exe+0x%llx", cb, iCallback,
+              (unsigned long long)ra);
     if (cb) {
         std::lock_guard<std::mutex> lk(g_cb_mtx);
         bool exists = false;
@@ -849,6 +949,8 @@ bool hooks::install() {
     snprintf(inip, MAX_PATH, "%ser_local_mp.ini", dir);
     GetPrivateProfileStringA("net", "matchbox_ip", "127.0.0.1", g_ctl_ip, sizeof(g_ctl_ip), inip);
     GetPrivateProfileStringA("fn", "host", g_ctl_ip, g_ctl_ip, sizeof(g_ctl_ip), inip);
+    GetPrivateProfileStringA("player", "name", "Tarnished", g_persona_name, sizeof(g_persona_name), inip);
+    GetPrivateProfileStringA("player", "language", "latam", g_game_lang, sizeof(g_game_lang), inip);
     char sess[32];
     GetPrivateProfileStringA("net", "session", "direct", sess, sizeof(sess), inip);
     g_steam_mode = (strcmp(sess, "steam") == 0);

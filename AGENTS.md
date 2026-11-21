@@ -78,10 +78,12 @@ entre módulos. Ver `docs/01-arquitectura.md`.
 
 ## Estado al 2026-11 (ver `docs/04-estado-y-roadmap.md` para el detalle)
 
-**EN CURSO — port a 1.17.2:** el binario nuevo es
-`f9118fea…b328`; los offsets del mod ya están portados (ver
-`analysis/09-port-1172-offsets.md`) y el DLL compila limpio. Falta la
-verificación en runtime (loader + login + co-op).
+**VERIFICADO en 1.17.2 (`f9118fea…b328`, 2026-11-21):** co-op real entre
+**dos PCs por Tailscale** — login FN, signos, lobby, P2P UDP directo PC↔PC,
+fantasma dorado en el mundo del host; bloodmessages cruzados visibles. Modo
+`session=direct` 100 % autónomo: sin Steam, sin OnlineFix, restaura el
+perfil de guardado real y `language = latam`. Offsets portados en
+`analysis/09-port-1172-offsets.md`.
 
 **VERIFICADO en build vieja `5d0b85d2` (snapshot en Git + backups/):**
 dos instancias corrieron co-op real (summon sign → lobby → P2P →
